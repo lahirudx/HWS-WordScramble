@@ -17,6 +17,8 @@ struct ContentView: View {
     @State private var errorMessage = ""
     @State private var showingError = false
     
+    @State private var score = 0
+    
     var body: some View {
         NavigationView {
                 List {
@@ -33,6 +35,10 @@ struct ContentView: View {
                             }
                         }
                     }
+                    
+                    Section {
+                        Text("Score: \(score)")
+                    }
                 }
                 .navigationTitle(rootWord)
                 .onSubmit(addNewWord)
@@ -41,6 +47,13 @@ struct ContentView: View {
                     Button("OK", role: .cancel) { }
                 } message: {
                     Text(errorMessage)
+                }
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Reset") {
+                            resetGame()
+                        }
+                    }
                 }
             }
     }
@@ -51,6 +64,16 @@ struct ContentView: View {
 
         // exit if the remaining string is empty
         guard answer.count > 0 else { return }
+        
+        guard isValidLength(word: answer) else {
+            wordError(title: "Word too short", message: "Word must be more than 3 chars")
+            return
+        }
+        
+        guard !isRootWord(word: answer) else {
+            wordError(title: "Restricted", message: "Cannot use root word")
+            return
+        }
 
         guard isOriginal(word: answer) else {
             wordError(title: "Word used already", message: "Be more original")
@@ -69,7 +92,9 @@ struct ContentView: View {
 
         withAnimation {
             usedWords.insert(answer, at: 0)
+            score += answer.count
         }
+        
         
         newWord = ""
     }
@@ -84,6 +109,8 @@ struct ContentView: View {
 
                 // 4. Pick one random word, or use "silkworm" as a sensible default
                 rootWord = allWords.randomElement() ?? "silkworm"
+                
+                score = 0
 
                 // If we are here everything has worked, so we can exit
                 return
@@ -120,10 +147,23 @@ struct ContentView: View {
         return misspelledRange.location == NSNotFound
     }
     
+    func isValidLength(word: String) -> Bool {
+        word.count >= 3
+    }
+    
+    func isRootWord(word: String) -> Bool {
+        word == rootWord
+    }
+    
     func wordError(title: String, message: String) {
         errorTitle = title
         errorMessage = message
         showingError = true
+    }
+    
+    func resetGame() {
+        usedWords.removeAll()
+        startGame()
     }
 }
 
